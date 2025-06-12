@@ -8,6 +8,7 @@ require('express-async-errors');
 
 // Import the models used in these routes - DO NOT MODIFY
 const { Band, Musician, Instrument } = require('./db/models');
+const instrument = require('./db/models/instrument');
 
 // Express using json - DO NOT MODIFY
 app.use(express.json());
@@ -16,11 +17,38 @@ app.use(express.json());
 // STEP 1: Creating from an associated model (One-to-Many)
 app.post('/bands/:bandId/musicians', async (req, res, next) => {
     // Your code here
-})
+    const id = req.params.bandId;
+    const { firstName, lastName } = req.body;
+    const band = await Band.findByPk(id);
+
+    const musician = await band.createMusician({firstName, lastName});
+
+    res.json({
+        message: `Created new musician for band ${band.name}`,
+        musician
+    });
+});
 
 // STEP 2: Connecting two existing records (Many-to-Many)
 app.post('/musicians/:musicianId/instruments', async (req, res, next) => {
     // Your code here
+    let instruments = [];
+    const { musicianId } = req.params;
+    const musician = await Musician.findByPk(musicianId);
+    
+    const { instrumentIds } = req.body;
+
+    for (let idx = 0; idx < instrumentIds.length; idx++) {
+        let id = instrumentIds[idx];
+        const instrument = await Instrument.findByPk(id);
+        instruments.push(instrument);
+    }
+
+    await musician.addInstruments(instruments);
+
+    res.json({
+        message: `Associated ${musician.firstName} with instruments [${instrumentIds}]`
+    });
 })
 
 
